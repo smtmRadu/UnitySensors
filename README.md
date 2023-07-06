@@ -9,5 +9,5 @@ All observations are taken calling **GetObservartions()** method, that returns a
 
 Use cases: robotics, reinforcement learning, game mechanics.
 
-![img1]("siamge.png")
-![img2]("simage2.png")
+![simage](https://github.com/RaduTM-spec/UnitySensors/assets/67599940/6c6bcf0a-8a0d-42bc-b266-615aa6f0a638)
+![simage2](https://github.com/RaduTM-spec/UnitySensors/assets/67599940/74547ff1-b38b-4132-bf5a-0903b8f0a65a)
