@@ -12,32 +12,27 @@ namespace DeepUnity
     public class CamSensor : MonoBehaviour, ISensor
     {
         [SerializeField] private Camera cam;
-        [SerializeField, Min(16)]private int Width = 640;
-        [SerializeField, Min(9)]private int Height = 480;
+        [SerializeField, Min(16)]private int width = 640;
+        [SerializeField, Min(9)]private int height = 480;
         [SerializeField] private CaptureType type = CaptureType.RGB;
 
-
-        /// <summary>
-        /// <b>Length</b> = <b>Width</b> * <b>Height</b>.
-        /// </summary>
-        /// <returns>IEnumerable of Color values.</returns>
-        public IEnumerable GetObservations()
+        private void Awake()
         {
-            return Capture().GetPixels();
+            if (cam == null)
+                Debug.Log("Please attach a camera to CamSensor");
         }
-
         /// <summary>
         /// Returns the image texture rendered by the camera.
         /// </summary>
         /// <returns>Texture2D</returns>
-        public Texture2D Capture()
+        public Texture2D GetObservationTexture()
         {
             if (cam == null)
             {
                 Debug.LogError("<color=red>CamSensor Cam not set to an instance of an object.</color>");
                 return null;
             }
-            cam.targetTexture = new RenderTexture(Width, Height, 0);
+            cam.targetTexture = new RenderTexture(width, height, 0);
 
 
             RenderTexture activeRT = RenderTexture.active;
@@ -61,6 +56,27 @@ namespace DeepUnity
 
             return image;
         }
+        public float[] GetObservationsVector()
+        {
+            Color[] pixels = GetObservationTexture().GetPixels();
+            int channels = type == CaptureType.RGB ? 3 : 1;
+            float[] vector = new float[pixels.Length * channels];
+            int index = 0;
+            foreach (var item in pixels)
+            {
+                if (type == CaptureType.RGB)
+                    vector[index++] = item.grayscale;
+                else
+                {
+                    vector[index++] = item.r;
+                    vector[index++] = item.g;
+                    vector[index++] = item.b;
+                }
+            }
+            return vector;
+        }
+
+
 
         public void TakeAShot()
         {
@@ -70,7 +86,7 @@ namespace DeepUnity
                 return;
             }
             if (cam.targetTexture == null)
-                cam.targetTexture = new RenderTexture(Width, Height, 0);
+                cam.targetTexture = new RenderTexture(width, height, 0);
 
 
             if (!Directory.Exists("Assets/CamShots"))
@@ -80,7 +96,7 @@ namespace DeepUnity
 
             if(guids.Length == 0)
             {
-                File.WriteAllBytes("Assets/CamShots/Frame1.png", Capture().EncodeToPNG());
+                File.WriteAllBytes("Assets/CamShots/Frame1.png", GetObservationTexture().EncodeToPNG());
             }
             else
             {
@@ -97,12 +113,12 @@ namespace DeepUnity
 
                     Debug.Log(newNumber);
                     Debug.Log(newPath);
-                    File.WriteAllBytes(newPath, Capture().EncodeToPNG());
+                    File.WriteAllBytes(newPath, GetObservationTexture().EncodeToPNG());
 
                 }
                 else
                 {
-                    File.WriteAllBytes("Assets/CamShots/Frame1.png", Capture().EncodeToPNG());
+                    File.WriteAllBytes("Assets/CamShots/Frame1.png", GetObservationTexture().EncodeToPNG());
                 }
             }
             
@@ -121,8 +137,28 @@ namespace DeepUnity
         public override void OnInspectorGUI()
         {
             CamSensor script = (CamSensor)target;
-          
+
+            SerializedProperty cam = serializedObject.FindProperty("cam");
+
+            if (cam.objectReferenceValue == null)
+                EditorGUILayout.HelpBox("Camera not attached to Cam Sensor.", MessageType.Warning);
+
+
             DrawPropertiesExcluding(serializedObject, dontInclude);
+
+            SerializedProperty type = serializedObject.FindProperty("type");
+            SerializedProperty w = serializedObject.FindProperty("width");
+            SerializedProperty h = serializedObject.FindProperty("height");
+
+            int vecDim = type.enumValueIndex == (int)CaptureType.Grayscale ?
+                            w.intValue * h.intValue :
+                            3 * w.intValue * h.intValue;
+
+            if(cam.objectReferenceValue != null)
+                EditorGUILayout.HelpBox($"Observations Vector contains {vecDim} float values.", MessageType.Info);
+            else
+                EditorGUILayout.HelpBox($"Cannot compute Observations Vector size until attaching a Camera.", MessageType.Info);
+
             serializedObject.ApplyModifiedProperties();
 
             EditorGUILayout.Separator();
