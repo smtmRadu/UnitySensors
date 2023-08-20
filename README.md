@@ -8,7 +8,7 @@ Special components used to capture observations in a custom environment. Working
 All observations are taken calling **GetObservationsVector()** method (or other particular **GetObservations()** method), that returns a float[] of size provided in the lower part of the component.
 
 Use cases: robotics, reinforcement learning, game mechanics.
-
-![image](https://github.com/smtmRadu/UnitySensors/camerasensor.png)
-![image2](https://github.com/smtmRadu/UnitySensors/gridsensor.png)
-![image3](https://github.com/smtmRadu/UnitySensors/camerasensor.png)
+![image0](https://github.com/smtmRadu/UnitySensors/blob/main/show.png?raw=true)
+![image1](https://github.com/smtmRadu/UnitySensors/blob/main/camerasensor.png?raw=true)
+![image2](https://github.com/smtmRadu/UnitySensors/blob/main/gridsensor.png?raw=true)
+![image3](https://github.com/smtmRadu/UnitySensors/blob/main/camerasensor.png?raw=true)
