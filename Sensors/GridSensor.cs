@@ -1,8 +1,6 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 
@@ -21,7 +19,7 @@ namespace DeepUnity
         private GridCellInfo[,,] Observations;
         [SerializeField, Tooltip("@scene type")] World world = World.World3d;
         [SerializeField, Tooltip("@LayerMask used when casting the rays")] LayerMask layerMask = ~0;
-        [SerializeField] string[] detectableTags = new string[1];
+        [SerializeField] string[] detectableTags;
         [SerializeField, Range(0.01f, 100f)] float scale = 1f;
         [SerializeField, Range(0.01f, 1f), Tooltip("@cast overlap raio")] float castScale = 0.95f;
         [SerializeField, Range(1, 20f)] int width = 8;
@@ -203,6 +201,7 @@ namespace DeepUnity
             SerializedProperty height = serializedObject.FindProperty("height");
             SerializedProperty depth = serializedObject.FindProperty("depth");
 
+            CheckTags(detTags);
            
             DrawPropertiesExcluding(serializedObject, _dontDrawMe.ToArray());
 
@@ -213,6 +212,45 @@ namespace DeepUnity
 
 
             serializedObject.ApplyModifiedProperties();
+        }
+        private void CheckTags(SerializedProperty detectableTags)
+        {
+            List<string> tagsToList = new List<string>();
+            for (int i = 0; i < detectableTags.arraySize; i++)
+                tagsToList.Add(detectableTags.GetArrayElementAtIndex(i).stringValue);
+
+            List<(int, string)> tags_that_are_not_existing = new List<(int, string)>();
+            for (int i = 0; i < tagsToList.Count; i++)
+            {
+                if (!UnityEditorInternal.InternalEditorUtility.tags.Contains(tagsToList[i]))
+                {
+                    tags_that_are_not_existing.Add((i, tagsToList[i]));
+                }
+            }
+
+            if (tags_that_are_not_existing.Count == 1)
+                EditorGUILayout.HelpBox(
+                    $"Detectable tag '{tags_that_are_not_existing[0].Item2}' at index {tags_that_are_not_existing[0].Item1} is not defined!", MessageType.Warning);
+
+            else if (tags_that_are_not_existing.Count > 1)
+            {
+                string wrongTagsList = "";
+                foreach (var item in tags_that_are_not_existing)
+                {
+                    wrongTagsList += $"'{item.Item2}' ({item.Item1}), ";
+                }
+                wrongTagsList = wrongTagsList.Substring(0, wrongTagsList.Length - 2);
+                EditorGUILayout.HelpBox(
+                    $"Detectable tags {wrongTagsList} are not defined!", MessageType.Warning);
+
+            }
+
+
+            // Check for doubles
+            var set = tagsToList.ToHashSet();
+            if (tagsToList.Count != set.Count)
+                EditorGUILayout.HelpBox(
+                   $"Detectable tags contains doubles!", MessageType.Warning);
         }
     }
 }

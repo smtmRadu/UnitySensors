@@ -2,11 +2,7 @@ using System;
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-using System.Collections;
-using Unity.Burst.CompilerServices;
-using UnityEngine.UIElements;
 using System.Linq;
-using Unity.VisualScripting;
 
 namespace DeepUnity
 {
@@ -17,7 +13,7 @@ namespace DeepUnity
 
         [SerializeField, Tooltip("@scene type")] World world = World.World3d;
         [SerializeField, Tooltip("@LayerMask used when casting the rays")] LayerMask layerMask = ~0;
-        [SerializeField, Tooltip("@tags that can provide information")] string[] detectableTags = new string[1];
+        [SerializeField, Tooltip("@tags that can provide information")] string[] detectableTags;
         [SerializeField, Range(1, 50), Tooltip("@size of the buffer equals the number of rays")] int rays = 5;
         [SerializeField, Range(1, 360)] int fieldOfView = 45;
         [SerializeField, Range(0, 359)] int rotationOffset = 0;
@@ -107,8 +103,6 @@ namespace DeepUnity
 
                 currentAngle += oneAngle;
             }
-
-
         }
 
         /// <summary>
@@ -228,7 +222,6 @@ namespace DeepUnity
 
 
             SerializedProperty sr = serializedObject.FindProperty("world");
-
             if (sr.enumValueIndex == (int)World.World2d)
             {
                 _dontDrawMe.Add("tilt");
@@ -237,16 +230,56 @@ namespace DeepUnity
             }
 
 
+            SerializedProperty detectableTags = serializedObject.FindProperty("detectableTags");
+            CheckTags(detectableTags);
 
             DrawPropertiesExcluding(serializedObject, _dontDrawMe.ToArray());
 
 
-            SerializedProperty detectableTags = serializedObject.FindProperty("detectableTags");
             int totalInfoSize = 1 + 1 + 1 + detectableTags.arraySize;
             EditorGUILayout.HelpBox($"Observation Vector contains {totalInfoSize} float values.", MessageType.Info);
 
 
             serializedObject.ApplyModifiedProperties();
+        }
+        private void CheckTags(SerializedProperty detectableTags)
+        {
+            List<string> tagsToList = new List<string>();
+            for (int i = 0; i < detectableTags.arraySize; i++)
+                tagsToList.Add(detectableTags.GetArrayElementAtIndex(i).stringValue);
+
+            List<(int, string)> tags_that_are_not_existing = new List<(int, string)>();
+            for (int i = 0; i < tagsToList.Count; i++)
+            {
+                if (!UnityEditorInternal.InternalEditorUtility.tags.Contains(tagsToList[i]))
+                {
+                    tags_that_are_not_existing.Add((i, tagsToList[i]));
+                }
+            }
+
+            if (tags_that_are_not_existing.Count == 1)
+                EditorGUILayout.HelpBox(
+                    $"Detectable tag '{tags_that_are_not_existing[0].Item2}' at index {tags_that_are_not_existing[0].Item1} is not defined!", MessageType.Warning);
+
+            else if (tags_that_are_not_existing.Count > 1)
+            {
+                string wrongTagsList = "";
+                foreach (var item in tags_that_are_not_existing)
+                {
+                    wrongTagsList += $"'{item.Item2}' ({item.Item1}), ";
+                }
+                wrongTagsList = wrongTagsList.Substring(0, wrongTagsList.Length - 2);
+                EditorGUILayout.HelpBox(
+                    $"Detectable tags {wrongTagsList} are not defined!", MessageType.Warning);
+
+            }
+                
+
+            // Check for doubles
+            var set = tagsToList.ToHashSet();
+            if(tagsToList.Count != set.Count)
+                EditorGUILayout.HelpBox(
+                   $"Detectable tags contains doubles!", MessageType.Warning);
         }
     }
    

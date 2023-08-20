@@ -26,6 +26,13 @@ namespace DeepUnity
         RGB,
         Grayscale,
     }
+    public enum CompressionType
+    {
+        PNG,
+        JPG,
+        EXG,
+        TGA
+    }
     public struct RayInfo
     {
         /// <summary>
@@ -44,6 +51,12 @@ namespace DeepUnity
         /// The index of the hit object's tag in the DetectableTags list, or -1 if there was no hit, or the hit object has a different tag.
         /// </summary>
         public int HitTagIndex;
+
+        public string ToString()
+        {
+            return $"[HasHit={HasHit}, HitFraction={HitFraction}, HitTaggedObject={HitTaggedObject}, HitTagIndex={HitTagIndex}]";
+        }
+
     }
     public struct GridCellInfo
     {
@@ -59,6 +72,11 @@ namespace DeepUnity
         /// The index of the overlapped object's tag in the DetectableTags list, or -1 if there was no overlap, or the overlapped object has a different tag.
         /// </summary>
         public int OverlapTagIndex;
+
+        public string ToString()
+        {
+            return $"[HasOverlap={HasOverlap}, HitFraction={OverlappedTaggedObject}, OverlapTagIndex={OverlapTagIndex}]";
+        }
     }
 }
 
