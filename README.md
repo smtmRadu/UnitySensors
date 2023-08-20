@@ -9,6 +9,6 @@ All observations are taken calling **GetObservationsVector()** method (or other 
 
 Use cases: robotics, reinforcement learning, game mechanics.
 
-![image](https://github.com/smtmRadu/blob/UnitySensors/camerasensor.png)
-![image2](https://github.com/smtmRadu/blob/UnitySensors/gridsensor.png)
-![image3](https://github.com/smtmRadu/blob/UnitySensors/camerasensor.png)
+![image](https://github.com/smtmRadu/UnitySensors/camerasensor.png)
+![image2](https://github.com/smtmRadu/UnitySensors/gridsensor.png)
+![image3](https://github.com/smtmRadu/UnitySensors/camerasensor.png)
