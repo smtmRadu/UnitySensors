@@ -14,7 +14,7 @@ namespace DeepUnity
         /// Returns all sensor's important observations in array format.
         /// </summary>
         /// <returns></returns>
-        //public float[] GetCompressedObservationsVector();
+        public float[] GetCompressedObservationsVector();
     }
     public enum World
     {
@@ -33,49 +33,43 @@ namespace DeepUnity
         EXG,
         TGA
     }
+    /// <summary>
+    /// The embedded float[] size of a RayInfo is 2 + num_detectable_tags.
+    /// </summary>
     public struct RayInfo
     {
         /// <summary>
-        /// Whether or not the ray hit anything.
+        /// Normalized distance to the hit object (in range [0, 1] by hit_distance / ray_max_distance). If no hit happend, the value is -1.
         /// </summary>
-        public bool HasHit;
-        /// <summary>
-        /// Normalized distance to the hit object.
-        /// </summary>
-        public float HitFraction;
-        /// <summary>
-        /// Whether or not the ray hit an object whose tag is in the input's DetectableTags list.
-        /// </summary>
-        public bool HitTaggedObject;
+        public float NormalizedDistance { get; set; }    
         /// <summary>
         /// The index of the hit object's tag in the DetectableTags list, or -1 if there was no hit, or the hit object has a different tag.
         /// </summary>
-        public int HitTagIndex;
+        public int HitTagIndex { get; set; }
 
         public string ToString()
         {
-            return $"[HasHit={HasHit}, HitFraction={HitFraction}, HitTaggedObject={HitTaggedObject}, HitTagIndex={HitTagIndex}]";
+            return $"[HitFraction={NormalizedDistance}, HitTagIndex={HitTagIndex}]";
         }
 
     }
+    /// <summary>
+    /// The emebedded value of a GridCellInfo is 2 * num_detectable_tags.
+    /// </summary>
     public struct GridCellInfo
     {
         /// <summary>
-        /// Whether or not the box overlaps anything.
+        /// Whether or not the grid cell overlapped an object.
         /// </summary>
-        public bool HasOverlap;
+        public bool HasOverlappedObject { get; set; }
         /// <summary>
-        /// Whether or not the box overlapped an object whose tag is in the input's DetectableTags list.
+        /// The index of the overlapped object's tag in the DetectableTags list, or -1 if there is no overlap, or the overlapped object has a different tag.
         /// </summary>
-        public bool OverlappedTaggedObject;
-        /// <summary>
-        /// The index of the overlapped object's tag in the DetectableTags list, or -1 if there was no overlap, or the overlapped object has a different tag.
-        /// </summary>
-        public int OverlapTagIndex;
+        public int OverlappedObjectTagIndex { get; set; }
 
         public string ToString()
         {
-            return $"[HasOverlap={HasOverlap}, HitFraction={OverlappedTaggedObject}, OverlapTagIndex={OverlapTagIndex}]";
+            return $"[HasOverlappedObject={HasOverlappedObject}, OverlapTagIndex={OverlappedObjectTagIndex}]";
         }
     }
 }

@@ -8,7 +8,7 @@ using Unity.VisualScripting;
 
 namespace DeepUnity
 {
-    [AddComponentMenu("DeepUnity/Camera Sensor")]
+    [AddComponentMenu("DeepUnity/CameraSensor")]
     public class CameraSensor : MonoBehaviour, ISensor
     {
         public int Width => width;
@@ -27,6 +27,12 @@ namespace DeepUnity
                 Debug.Log("Please attach a camera to CamSensor");         
         }
 
+
+
+        /// <summary>
+        /// Returns the image pixels converted into float numbers.
+        /// </summary>
+        /// <returns>Returns a float[] with length = <b>3 * width * height</b>, or <b>1 * width * height</b> for Grayscale capture.</returns>
         public float[] GetObservationsVector()
         {
             Color[] pixels = GetObservationPixels();
@@ -45,6 +51,17 @@ namespace DeepUnity
                 }
             }
             return vector;
+        }
+        /// <summary>
+        /// Returns the grayscale image pixels converted into float numbers.
+        /// </summary>
+        /// <returns>Returns a float[] with length = <b>width * height</b>, as if the capture would have been Grayscale.</returns>
+        public float[] GetCompressedObservationsVector()
+        {
+            CaptureType oldCaptureType = type;
+            float[] vec = GetObservationsVector();
+            type = oldCaptureType;
+            return vec;
         }
         /// <summary>
         /// Returns the pixels of the camera rendered image. The pixels are not affected by Grayscale type.
@@ -72,6 +89,9 @@ namespace DeepUnity
             return pixels;
         }
        
+
+
+
         /// <summary>
         /// Do not use anywhere without Destroying the Texture2D afterwards!
         /// </summary>
@@ -210,11 +230,11 @@ namespace DeepUnity
                             w.intValue * h.intValue :
                             3 * w.intValue * h.intValue;
 
-          
+            int compVecDim = w.intValue * h.intValue;
 
 
             if (cam.objectReferenceValue != null)
-                EditorGUILayout.HelpBox($"Observations Vector contains {vecDim} float values.", MessageType.Info);
+                EditorGUILayout.HelpBox($"Observations Vector contains {vecDim} float values. Compressed Observations Vector contains {compVecDim} flaot values.", MessageType.Info);
             else
                 EditorGUILayout.HelpBox($"Cannot compute Observations Vector size until attaching a Camera.", MessageType.Info);
 

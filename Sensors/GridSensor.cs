@@ -13,7 +13,7 @@ namespace DeepUnity
     /// Tag 2 hit -> value 2 <br />
     /// ...
     /// </summary>
-    [AddComponentMenu("DeepUnity/Grid Sensor")]
+    [AddComponentMenu("DeepUnity/GridSensor")]
     public class GridSensor : MonoBehaviour, ISensor
     {
         private GridCellInfo[,,] Observations;
@@ -106,6 +106,11 @@ namespace DeepUnity
 
         }
 
+        /// <summary>
+        /// Embedds the observations into a float[]. OverlappedObjectTagindex is One Hot Encoded, where the first spot represents a non-detectable tag. <br></br>
+        /// Example: <b>[<em>HasOverlappedObject, NonDetectableTag</em>, DetectableTag[0], DetectableTag[1], ... DetectableTag[n-1]]</b>
+        /// </summary>
+        /// <returns>Returns a float[] of length = width * height * depth * (2 + num_detectable_tags)</returns>
         public float[] GetObservationsVector()
         {
             int cellDataSize = 2 + detectableTags.Length;
@@ -118,14 +123,58 @@ namespace DeepUnity
                     for (int w = 0; w < width; w++)
                     {
                         GridCellInfo cell = Observations[k, h, w];
-                        vector[index++] = cell.HasOverlap ? 1f : 0f;
-                        vector[index++] = cell.OverlappedTaggedObject ? 1f : 0f;
-                        vector[index++] = cell.OverlapTagIndex;
+                        vector[index++] = cell.HasOverlappedObject ? 1f : 0f;
+
+                        // OneHotEncode
+                        if (cell.OverlappedObjectTagIndex == -1)
+                            vector[index++] = 1f;
+                        else
+                            vector[index++] = 0f;
+
+
+                        for (int i = 0; i < detectableTags.Length; i++)
+                            if (cell.OverlappedObjectTagIndex == i)
+                                vector[index++] = 1f;
+                            else
+                                vector[index++] = 0f;
                     }
                 }
             }
             return vector;
         }
+
+        /// <summary>
+        /// Scales down in range [0, 1] the OverlappedObjectTagIndex. If the OverlappedObjectTagIndex is -1, it the remains -1. <br></br>
+        /// Example: <b>[HasOverlappedObject, OverlappedObjectTagIndex]</b>
+        /// </summary>
+        /// <returns>Returns a float[] of length = width * height * depth * 2.</returns>
+        public float[] GetCompressedObservationsVector()
+        {
+            float[] vector = new float[2 * Observations.GetLength(0) * Observations.GetLength(1) * Observations.GetLength(2)];
+            int index = 0;
+            for (int k = 0; k < depth; k++)
+            {
+                for (int h = 0; h < height; h++)
+                {
+                    for (int w = 0; w < width; w++)
+                    {
+                        GridCellInfo cell = Observations[k, h, w];
+                        vector[index++] = cell.HasOverlappedObject ? 1f : 0f;
+
+                        // OneHotEncode
+                        if (cell.OverlappedObjectTagIndex == -1)
+                            vector[index++] = -1f;
+                        else
+                            vector[index++] = cell.OverlappedObjectTagIndex / (float) cell.OverlappedObjectTagIndex;
+                    }
+                }
+            }
+            return vector;
+        }
+        /// <summary>
+        /// Returns information of all grid cells in (depth, height, width) dimensions. In 2D, first dimension (depth) is 1.
+        /// </summary>
+        /// <returns></returns>
         public GridCellInfo[,,] GetObservationsGridCells()
         {
             return Observations.Clone() as GridCellInfo[,,];
@@ -150,9 +199,8 @@ namespace DeepUnity
                             Collider[] hits = Physics.OverlapBox(position, Vector3.one * scale * castScale / 2f, new Quaternion(0, 0, 0, 1), layerMask);
 
                             GridCellInfo cellInfo = new GridCellInfo();
-                            cellInfo.HasOverlap = hits.Length > 0;
-                            cellInfo.OverlappedTaggedObject = hits.Length > 0 && detectableTags != null? detectableTags.Contains(hits[0].tag) : false;
-                            cellInfo.OverlapTagIndex = hits.Length > 0 && detectableTags != null ? Array.IndexOf(detectableTags, hits[0].tag) : -1;
+                            cellInfo.HasOverlappedObject = hits.Length > 0;
+                            cellInfo.OverlappedObjectTagIndex = hits.Length > 0 && detectableTags != null ? Array.IndexOf(detectableTags, hits[0].tag) : -1;
                             Observations[d,h,w] = cellInfo;
                         }
                         else if (world == World.World2d)
@@ -162,9 +210,8 @@ namespace DeepUnity
 
                             Collider2D hit = Physics2D.OverlapBox(position, Vector2.one * scale * castScale, 0);
                             GridCellInfo cellInfo = new GridCellInfo();
-                            cellInfo.HasOverlap = hit;
-                            cellInfo.OverlappedTaggedObject = hit && detectableTags != null ? detectableTags.Contains(hit.tag) : false;
-                            cellInfo.OverlapTagIndex = hit && detectableTags != null ? Array.IndexOf(detectableTags, hit.tag) : -1;
+                            cellInfo.HasOverlappedObject = hit;
+                            cellInfo.OverlappedObjectTagIndex = hit && detectableTags != null ? Array.IndexOf(detectableTags, hit.tag) : -1;
                             Observations[d, h, w] = cellInfo;
 
                         }
@@ -205,10 +252,14 @@ namespace DeepUnity
            
             DrawPropertiesExcluding(serializedObject, _dontDrawMe.ToArray());
 
-            int totalInfo = sr.enumValueIndex == (int)World.World2d ?
+            int vecDim = sr.enumValueIndex == (int)World.World2d ?
               (2 + detTags.arraySize) * width.intValue * height.intValue :
               (2 + detTags.arraySize) * width.intValue * height.intValue * depth.intValue;
-            EditorGUILayout.HelpBox($"Observation Vector contains {totalInfo} float values.", MessageType.Info);
+
+            int compVecDim = sr.enumValueIndex == (int)World.World2d ?
+                2 * width.intValue * height.intValue :
+                2 * width.intValue * height.intValue * depth.intValue;
+            EditorGUILayout.HelpBox($"Observations Vector contains {vecDim} float values. Compressed Observations Vector contains {compVecDim} float values.", MessageType.Info);
 
 
             serializedObject.ApplyModifiedProperties();

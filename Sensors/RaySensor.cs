@@ -6,7 +6,10 @@ using System.Linq;
 
 namespace DeepUnity
 {
-    [AddComponentMenu("DeepUnity/Ray Sensor")]
+    /// <summary>
+    /// ObservationVector.Length = <see cref="rays"/> * (2 +  <see cref="detectableTags"/>.Length)
+    /// </summary>
+    [AddComponentMenu("DeepUnity/RaySensor")]
     public class RaySensor : MonoBehaviour, ISensor
     {
         private readonly LinkedList<RayInfo> Observations = new LinkedList<RayInfo>();
@@ -106,6 +109,56 @@ namespace DeepUnity
         }
 
         /// <summary>
+        /// Embedds the observations into a float[]. HitTagIndex is One Hot Encoded, where the first spot represents a non-detectable tag. <br></br>
+        /// Example: <b>[<em>NormalizedDistance, NonDetectableTag</em>, DetectableTag[0], DetectableTag[1], ... DetectableTag[n-1]]</b>
+        /// </summary>
+        /// <returns>Returns a float[] of length = num_rays * (2 + num_detectable_tags).</returns>
+        public float[] GetObservationsVector()
+        {
+            int rayInfoDim = 2 + detectableTags.Length;
+            float[] vector = new float[rays * rayInfoDim];
+            int index = 0;
+            foreach (var rayInfo in Observations)
+            {
+                vector[index++] = rayInfo.NormalizedDistance;
+
+                // OneHotEncode
+                if (rayInfo.HitTagIndex == -1)
+                    vector[index++] = 1f;
+                else
+                    vector[index++] = 0f;
+
+
+                for (int i = 0; i < detectableTags.Length; i++)
+                    if (rayInfo.HitTagIndex == i)
+                        vector[index++] = 1f;
+                    else
+                        vector[index++] = 0f;
+            }
+            return vector;
+        }
+        /// <summary>
+        /// Scales down in range [0, 1] the HitTagIndex. If the HitTagIndex is -1, it remains -1. <br></br>
+        /// Example: <b>[NormalizedDistance, HitTagIndex]</b>
+        /// </summary>
+        /// <returns>Returns a float[] of length = 2 * num_rays.</returns>
+        public float[] GetCompressedObservationsVector()
+        {
+            float[] vector = new float[rays * 2];
+            int index = 0;
+            foreach (var rayInfo in Observations)
+            {
+                vector[index++] = rayInfo.NormalizedDistance;
+
+                // OneHotEncode
+                if (rayInfo.HitTagIndex == -1)
+                    vector[index++] = -1f;
+                else
+                    vector[index++] = rayInfo.HitTagIndex / (float) detectableTags.Length;
+            }
+            return vector;
+        }
+        /// <summary>
         /// Returns information of all rays.
         /// </summary>
         /// <returns></returns>
@@ -113,21 +166,7 @@ namespace DeepUnity
         {
             return Observations.ToArray();
         }
-        public float[] GetObservationsVector()
-        {
-            int rayInfoDim = 3 + detectableTags.Length;
-            float[] vector = new float[rays * rayInfoDim];
-            int index = 0;
-            foreach (var rayInfo in Observations)
-            {
-                vector[index++] = rayInfo.HasHit ? 1f : 0f;
-                vector[index++] = rayInfo.HitFraction;
-                vector[index++] = rayInfo.HitTaggedObject ? 1f : 0f;
-                vector[index++] = rayInfo.HitTagIndex;
-            }
-            return vector;
-        }
-       
+        
        
 
         /// <summary>
@@ -183,9 +222,7 @@ namespace DeepUnity
             bool success = Physics.SphereCast(castOrigin, sphereCastRadius, rayDirection, out hit, distance, layerMask);
             
             RayInfo rayInfo = new RayInfo();
-            rayInfo.HasHit = success;
-            rayInfo.HitFraction = success ? hit.distance / distance : 0f;
-            rayInfo.HitTaggedObject = success && detectableTags != null? detectableTags.Contains(hit.collider.tag) : false;
+            rayInfo.NormalizedDistance = success ? hit.distance / distance : -1f;
             rayInfo.HitTagIndex = success && detectableTags != null ? Array.IndexOf(detectableTags, hit.collider.tag) : -1;
             Observations.AddLast(rayInfo);
         }
@@ -197,9 +234,7 @@ namespace DeepUnity
             RaycastHit2D hit = Physics2D.CircleCast(castOrigin, sphereCastRadius, rayDirection, distance, layerMask);
 
             RayInfo rayInfo = new RayInfo();
-            rayInfo.HasHit = hit;
-            rayInfo.HitFraction = hit ? hit.distance / distance : 0f;
-            rayInfo.HitTaggedObject = hit && detectableTags != null ? detectableTags.Contains(hit.collider.tag) : false;
+            rayInfo.NormalizedDistance = hit ? hit.distance / distance : -1f;
             rayInfo.HitTagIndex = hit && detectableTags != null ? Array.IndexOf(detectableTags, hit.collider.tag) : -1;
             Observations.AddLast(rayInfo);
         }   
@@ -215,9 +250,6 @@ namespace DeepUnity
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-
-            var script = target as RaySensor;
-
             List<string> _dontDrawMe = new List<string>() { "m_Script" };
 
 
@@ -235,9 +267,10 @@ namespace DeepUnity
 
             DrawPropertiesExcluding(serializedObject, _dontDrawMe.ToArray());
 
-
-            int totalInfoSize = 1 + 1 + 1 + detectableTags.arraySize;
-            EditorGUILayout.HelpBox($"Observation Vector contains {totalInfoSize} float values.", MessageType.Info);
+            SerializedProperty rays_num = serializedObject.FindProperty("rays");
+            int vecSize = (2 + detectableTags.arraySize) * rays_num.intValue;
+            int compVecSize = 2 * rays_num.intValue;
+            EditorGUILayout.HelpBox($"Observations Vector contains {vecSize} float values. Compressed Observations Vector contains {compVecSize} float values.", MessageType.Info);
 
 
             serializedObject.ApplyModifiedProperties();
