@@ -5,7 +5,7 @@ Special components used to capture observations in a custom environment. Working
 - **GridSensor**: Cast multiple boxes mapping the environmental objects in close proximity.
 - **CameraSensor**: Captures an image of the environment (also takes manual captures, saved in Assets folder)
 
-All observations are taken calling **GetObservationsVector()** method (or other GetCompressedObservationsVector()), that returns a float[] of length provided in the lower part of the component (check images below).
+All observations are taken calling **GetObservationsVector()** method (or **GetCompressedObservationsVector()**), that returns a float[] of length provided in the lower part of the component (check images below).
 
 Use cases: robotics, reinforcement learning, game mechanics.
 ![image0](https://github.com/smtmRadu/UnitySensors/blob/main/show.png?raw=true)
