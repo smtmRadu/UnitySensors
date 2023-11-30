@@ -83,7 +83,7 @@ namespace DeepUnity
 
                             Collider2D hit = Physics2D.OverlapBox(position, Vector2.one * scale * castScale, transform.rotation.z);
                             bool gotHit = hit != null;
-                            
+
                             if (gotHit)
                             {
                                 SpriteRenderer sr;

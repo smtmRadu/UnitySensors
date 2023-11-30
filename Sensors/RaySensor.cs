@@ -64,7 +64,7 @@ namespace DeepUnity
 
                     RaycastHit hit;
                     bool isHit = Physics.SphereCast(castOrigin, sphereCastRadius, rayDirection, out hit, distance, layerMask);
-                    
+
                     if (isHit)
                     {
                         Gizmos.color = rayColor;
@@ -80,7 +80,7 @@ namespace DeepUnity
                 else //2d
                 {
                     rayDirection = Quaternion.AngleAxis(currentAngle, transform.forward) * startAngle;
-                    
+
                     RaycastHit2D hit2D = Physics2D.CircleCast(castOrigin, sphereCastRadius, rayDirection, distance, layerMask);
                     if (hit2D)
                     {
@@ -100,10 +100,13 @@ namespace DeepUnity
         }
 
         /// <summary>
-        /// Embedds the observations into a float[]. HitTagIndex is One Hot Encoded, where the first spot represents a non-detectable tag. <br></br>
-        /// Example: <b>[ray 1: <em>NormalizedDistance, NonDetectableTag</em>, DetectableTag[0], DetectableTag[1], ... DetectableTag[n-1], ray 2: NormalizedDistance, ....]</b>
+        /// - The Distance is normalized in range [0, 1] (hit_distance / ray_max_distance).  If no hit happend, the value is -1. <br></br>
+        /// - HitTagIndex is One Hot Encoded, where the first spot represents a non-detectable tag. <br></br>
+        /// Example: <br></br>
+        /// <b>[ray 1: <em>NormalizedDistance</em>, NonDetectableTag, DetectableTag[0], DetectableTag[1], ... DetectableTag[n-1], <br></br>
+        ///  ray 2: <em>NormalizedDistance</em>, NonDetectableTag, DetectableTag[0], DetectableTag[1], ... DetectableTag[n-1], .....]</b>
         /// </summary>
-        /// <returns>Returns a float[] of length = num_rays * (2 + num_detectable_tags).</returns>
+        /// <returns> a float[] of <b>length = num_rays * (2 + num_detectable_tags)</b>.</returns>
         public float[] GetObservationsVector()
         {
             CastRays();
@@ -130,15 +133,18 @@ namespace DeepUnity
             return vector;
         }
         /// <summary>
-        /// Scales down in range [0, 1] the HitTagIndex. If the HitTagIndex is -1, it remains -1. <br></br>
-        /// Example: <b>[NormalizedDistance, HitTagIndex]</b>
+        /// - The Distance is normalized in range [0, 1] (hit_distance / ray_max_distance).  If no hit happend, the value is -1. <br></br>
+        /// - If DetectableTags.Length > 0, HitTagIndex is normalized in range [0, 1]. If no detectable tag hit, the value is -1. <br></br>
+        /// Example: <br></br>
+        /// if DetectableTags.Length > 0: <b>[ray 1: NormalizedDistance, NormalizedHitTagIndex, ray 2: NormalizedDistance, NormalizedHitTagIndex, ..... ]</b> <br></br>
+        /// else: <b>[ray 1: NormalizedDistance, ray 2: NormalizedDistance, ..... ]</b>
         /// </summary>
-        /// <returns>Returns a float[] of length = num_rays * 2.</returns>
+        /// <returns>a float[] of <b>length = num_rays * 2</b> if DetectableTags.Length > 0 else <b>num_rays</b></returns>
         public float[] GetCompressedObservationsVector()
         {
             CastRays();
 
-            if(detectableTags!=null && detectableTags.Length > 0)
+            if (detectableTags != null && detectableTags.Length > 0)
             {
                 float[] vector = new float[rays * 2];
                 int index = 0;
@@ -146,7 +152,6 @@ namespace DeepUnity
                 {
                     vector[index++] = rayInfo.NormalizedDistance;
 
-                    // OneHotEncode
                     if (rayInfo.HitTagIndex == -1)
                         vector[index++] = -1f;
                     else
@@ -164,7 +169,7 @@ namespace DeepUnity
                 }
                 return vector;
             }
-            
+
         }
         /// <summary>
         /// Returns information of all rays.
@@ -175,8 +180,8 @@ namespace DeepUnity
             CastRays();
             return Observations.ToArray();
         }
-        
-       
+
+
 
         /// <summary>
         /// This methods casts the necessary rays.
@@ -207,7 +212,7 @@ namespace DeepUnity
 
             for (int r = 0; r < rays; r++)
             {
-                
+
                 if (world == World.World3d)
                 {
                     Vector3 rayDirection = Quaternion.AngleAxis(currentAngle, transform.up) * startAngle;
@@ -218,7 +223,7 @@ namespace DeepUnity
                     Vector3 rayDirection = Quaternion.AngleAxis(currentAngle, transform.forward) * startAngle;
                     CastRay2D(castOrigin, sphereCastRadius, rayDirection, distance, layerMask);
                 }
-              
+
                 currentAngle += oneAngle;
             }
 
@@ -236,7 +241,7 @@ namespace DeepUnity
         {
             RaycastHit hit;
             bool success = Physics.SphereCast(castOrigin, sphereCastRadius, rayDirection, out hit, distance, layerMask);
-            
+
             RayInfo rayInfo = new RayInfo();
             rayInfo.NormalizedDistance = success ? hit.distance / distance : -1f;
             rayInfo.HitTagIndex = success && detectableTags != null ? Array.IndexOf(detectableTags, hit.collider.tag) : -1;
@@ -253,12 +258,12 @@ namespace DeepUnity
             rayInfo.NormalizedDistance = hit ? hit.distance / distance : -1f;
             rayInfo.HitTagIndex = hit && detectableTags != null ? Array.IndexOf(detectableTags, hit.collider.tag) : -1;
             Observations.AddLast(rayInfo);
-        }   
+        }
     }
 
-    
-  
-   
+
+
+
 
     [CustomEditor(typeof(RaySensor)), CanEditMultipleObjects]
     class ScriptlessRaySensor : Editor
@@ -322,14 +327,14 @@ namespace DeepUnity
                     $"Detectable tags {wrongTagsList} are not defined!", MessageType.Warning);
 
             }
-                
+
 
             // Check for doubles
             var set = tagsToList.ToHashSet();
-            if(tagsToList.Count != set.Count)
+            if (tagsToList.Count != set.Count)
                 EditorGUILayout.HelpBox(
                    $"Detectable tags contains doubles!", MessageType.Warning);
         }
     }
-   
+
 }
