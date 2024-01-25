@@ -43,11 +43,11 @@ namespace DeepUnity
         /// </summary>
         public float NormalizedDistance { get; set; }    
         /// <summary>
-        /// The index of the hit object's tag in the DetectableTags list, or -1 if there was no hit, or the hit object has a different tag.
+        /// The index of the hit object's tag in the DetectableTags list, or -1 if there was no hit, or the hit object has a different tag. (Note: we do not need a different slot for no hit, this is why we have distance)
         /// </summary>
         public int HitTagIndex { get; set; }
 
-        public string ToString()
+        public override string ToString()
         {
             return $"[HitFraction={NormalizedDistance}, HitTagIndex={HitTagIndex}]";
         }
@@ -67,7 +67,7 @@ namespace DeepUnity
         /// </summary>
         public int OverlappedObjectTagIndex { get; set; }
 
-        public string ToString()
+        public override string ToString()
         {
             return $"[HasOverlappedObject={HasOverlappedObject}, OverlapTagIndex={OverlappedObjectTagIndex}]";
         }

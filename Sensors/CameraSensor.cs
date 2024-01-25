@@ -15,8 +15,8 @@ namespace DeepUnity
         public int Height => height;
 
         [SerializeField] public Camera cam;
-        [SerializeField, Min(16)] private int width = 640;
-        [SerializeField, Min(9)] private int height = 480;
+        [SerializeField, Min(16)]private int width = 640;
+        [SerializeField, Min(9)]private int height = 480;
         [SerializeField] private CaptureType type = CaptureType.RGB;
         [SerializeField] private CompressionType compression = CompressionType.PNG;
 
@@ -24,7 +24,7 @@ namespace DeepUnity
         private void Awake()
         {
             if (cam == null)
-                Debug.Log("Please attach a camera to CamSensor");
+                Debug.Log("Please attach a camera to CamSensor");         
         }
 
 
@@ -81,7 +81,7 @@ namespace DeepUnity
                 renderTexture = new RenderTexture(width, height, 0);
                 renderTexture.filterMode = FilterMode.Point;
             }
-
+               
 
             RenderTexture activeRT = RenderTexture.active;
             cam.targetTexture = renderTexture;
@@ -96,7 +96,7 @@ namespace DeepUnity
             DestroyImmediate(image);
             return pixels;
         }
-
+       
 
 
 
@@ -147,7 +147,7 @@ namespace DeepUnity
 
             string[] guids = AssetDatabase.FindAssets("t:Texture", new string[] { "Assets/CamShots" });
 
-            if (guids.Length == 0)
+            if(guids.Length == 0)
                 ExecuteShotImageSave("Assets/CamShots/Frame1.png");
             else
             {
@@ -166,10 +166,10 @@ namespace DeepUnity
                 }
 
                 ExecuteShotImageSave(pathToSave);
-            }
+            }            
 
             AssetDatabase.Refresh();
-        }
+        }  
         private void ExecuteShotImageSave(string atPath)
         {
             Texture2D image = GetCameraTexture();
@@ -195,7 +195,7 @@ namespace DeepUnity
 
 
 
-    #region Editor
+#if UNITY_EDITOR
     [CustomEditor(typeof(CameraSensor)), CanEditMultipleObjects]
     class ScriptlessCameraSensor : Editor
     {
@@ -216,7 +216,7 @@ namespace DeepUnity
             {
                 script.GetObservationPixels();
                 EditorGUILayout.Space();
-                Rect previewRect = GUILayoutUtility.GetRect(100, 100);
+                Rect previewRect = GUILayoutUtility.GetRect(100,100);
                 EditorGUI.DrawPreviewTexture(previewRect, script.renderTexture, null, ScaleMode.ScaleToFit);
 
 
@@ -226,11 +226,11 @@ namespace DeepUnity
                 centeredStyle.fontSize = 15;
                 centeredStyle.fontStyle = FontStyle.Bold;
                 GUI.Label(previewRect, "Camera Preview", centeredStyle);
-
+            
             }
 
 
-
+            
 
             if (cam.objectReferenceValue == null)
                 EditorGUILayout.HelpBox("Camera not attached to Cam Sensor.", MessageType.Warning);
@@ -258,8 +258,8 @@ namespace DeepUnity
 
             serializedObject.ApplyModifiedProperties();
 
-
+           
         }
     }
-    #endregion
+#endif
 }
